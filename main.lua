@@ -1,5 +1,7 @@
 require ("platform")
 require ("player")
+require ("ghost")
+
 
 function love.load()
 	--initial graphics setup
@@ -14,6 +16,7 @@ function love.load()
 	
 	require ("playLevel")
 	load("gameMap.tilemap", "Tileset.png")
+	
 end
 
  
