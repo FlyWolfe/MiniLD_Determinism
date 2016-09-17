@@ -146,16 +146,11 @@ function setupTileset()
 	local tilesHigh = tilesetImage:getHeight() / tileSize
 
 	for x=0, tilesWide - 1 do
-	for y=0, tilesHigh - 1 do
-		tileQuads[(x*tilesHigh)+y ] = love.graphics.newQuad( x * tileSize, y * tileSize, tileSize, tileSize,
-			tilesetImage:getWidth(), tilesetImage:getHeight())
+		for y=0, tilesHigh - 1 do
+			tileQuads[(x*tilesHigh)+y ] = love.graphics.newQuad( x * tileSize, y * tileSize, tileSize, tileSize,
+				tilesetImage:getWidth(), tilesetImage:getHeight())
+		end
 	end
-	end
-
-	print("yuppers")
-	print(tostring(tileQuads))
-	print(tostring(tileQuads[3]))
-
 	tilesetBatch = love.graphics.newSpriteBatch(tilesetImage, tilesDisplayWidth * tilesDisplayHeight)
 
 	updateTilesetBatch()
