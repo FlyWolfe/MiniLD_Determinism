@@ -5,6 +5,7 @@ local map = {} -- stores tiledata
 local mapWidth, mapHeight -- width and height in tiles
  
 local mapX, mapY -- view x,y in tiles. can be a fractional value like 3.25.
+local prevMapX, prevMapY
 local tilesDisplayWidth, tilesDisplayHeight -- number of tiles to show
 local zoomX, zoomY
  
@@ -34,14 +35,25 @@ function love.load()
 	objects.platforms = {} --table to hold all platforms
 
 	--Create Platforms
-	table.insert(objects.platforms, createPlatform(world, love.graphics.getWidth() / 2, love.graphics.getHeight() - 25, love.graphics.getWidth(), 50, 10, BASIC_PLATFORM))
-	table.insert(objects.platforms, createPlatform(world, 200, 550, 50, 75, 5, DISAPPEARING_PLATFORM))
-	table.insert(objects.platforms, createPlatform(world, 200, 400, 100, 50, 2, DISAPPEARING_PLATFORM))
+	addPhysicsObjects()
+	--table.insert(objects.platforms, createPlatform(world, love.graphics.getWidth() / 2, love.graphics.getHeight() - 25, love.graphics.getWidth(), 50, 10, BASIC_PLATFORM))
+	--table.insert(objects.platforms, createPlatform(world, 200, 550, 50, 75, 5, DISAPPEARING_PLATFORM))
+	--table.insert(objects.platforms, createPlatform(world, 200, 400, 100, 50, 2, DISAPPEARING_PLATFORM))
 
 	objects.player = Player.create(world, 325, 325, 20, 20)
   
   
 end
+
+
+function addPhysicsObjects()
+	for x=1, #map do
+		for y=1, #map[x] do
+			if map[x][y] > 1 then table.insert(objects.platforms, createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, BASIC_PLATFORM)) end
+		end
+	end
+end
+
  
 function love.update(dt)
 	--camera movement
@@ -62,7 +74,9 @@ function love.update(dt)
 	objects.player:update(dt)
 	local colliders = objects.player:getGroundedBodies()
 
-	for i = #objects.platforms, 1, -1 do
+	for i = 1, #objects.platforms do--#objects.platforms, 1, -1 do
+		objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
+		objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
 		objects.platforms[i]:update(dt)
 		--if we are colliding with the current platform, then activate it
 		for j = 1, #colliders, 1 do
@@ -74,6 +88,8 @@ function love.update(dt)
 			table.remove(objects.platforms, i)
 		end
 	end
+		prevMapX = mapX
+		prevMapY = mapY
 end
  
 function love.draw()
@@ -82,13 +98,13 @@ function love.draw()
 	0, zoomX, zoomY)
 	love.graphics.print("FPS: "..love.timer.getFPS(), 10, 20)
 
-	love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
+	--love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
 	love.graphics.polygon("fill", objects.player.body:getWorldPoints(objects.player.shape:getPoints()))
 	
-	love.graphics.setColor(50, 50, 50) -- set the drawing color to grey for the blocks
-	for i = 1, #objects.platforms do
-		love.graphics.polygon("fill", objects.platforms[i].body:getWorldPoints(objects.platforms[i].shape:getPoints()))
-	end
+	--love.graphics.setColor(50, 50, 50) -- set the drawing color to grey for the blocks
+	--for i = 1, #objects.platforms do
+		--love.graphics.polygon("fill", objects.platforms[i].body:getWorldPoints(objects.platforms[i].shape:getPoints()))
+	--end
 end
 
 
@@ -98,7 +114,7 @@ end
 --Tile Stuff
 function setupMap()
 	local count = 1
-	for line in love.filesystem.lines("TestMap.tilemap") do
+	for line in love.filesystem.lines("gameMap.tilemap") do
 		local tempParse = string.explode(line, ",")
 		map[count] = {}
 		for i=1, #tempParse do
@@ -130,6 +146,8 @@ end
 function setupMapView()
 	mapX = 1
 	mapY = 1
+	prevMapX = 1
+	prevMapY = 1
 	tilesDisplayWidth = math.floor(love.graphics.getWidth() / tileSize) + 2
 	tilesDisplayHeight = math.floor(love.graphics.getHeight() / tileSize) + 2
 
