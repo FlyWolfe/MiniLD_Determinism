@@ -92,13 +92,13 @@ end
 function Player:update(dt)
 	--press the right arrow key to push the ball to the right
 	if love.keyboard.isDown("right") then
-		self.body:applyForce(200, 0)
+		self.body:applyForce(100, 0)
 		x, y = self.body:getLinearVelocity()
 		if math.abs(x) > self.maxSpeed then
 			self.body:setLinearVelocity(self.maxSpeed,y)
 		end
 	elseif love.keyboard.isDown("left") then --press the left arrow key to push the ball to the left
-		self.body:applyForce(-200, 0)
+		self.body:applyForce(-100, 0)
 		x, y = self.body:getLinearVelocity()
 		if math.abs(x) > self.maxSpeed then
 			self.body:setLinearVelocity(-self.maxSpeed,y)
