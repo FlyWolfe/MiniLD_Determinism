@@ -16,8 +16,6 @@ function love.load()
 	--initial graphics setup
 	--love.graphics.setBackgroundColor(104, 136, 248) --set the background color to a nice blue
 	love.window.setMode(650, 650) --set the window dimensions to 650 by 650
-
-	
 	setupMap()
 	setupMapView()
 	setupTileset()
@@ -27,6 +25,12 @@ function love.load()
 	--initial graphics setup
 	love.graphics.setBackgroundColor(104, 136, 248) --set the background color to a nice blue
 	love.window.setMode(650, 650) --set the window dimensions to 650 by 650
+	
+	settings = {}
+	--frameRate in fps
+	settings.frameRate = 60
+	settings.deltaTime = 1 / settings.frameRate
+	settings.nextFrame = love.timer.getTime()
 
 	love.physics.setMeter(64) --the height of a meter our worlds will be 64px
 	world = love.physics.newWorld(0, 9.81*64, true) --create a world for the bodies to exist in with horizontal gravity of 0 and vertical gravity of 9.81
@@ -56,6 +60,9 @@ end
 
  
 function love.update(dt)
+	--some data upkeep for keeping a constant frame rate
+	settings.nextFrame = settings.nextFrame + settings.deltaTime
+	
 	--camera movement
 	if love.keyboard.isDown("up")  then
 		moveMap(0, -0.2 * tileSize * dt)
@@ -105,6 +112,15 @@ function love.draw()
 	--for i = 1, #objects.platforms do
 		--love.graphics.polygon("fill", objects.platforms[i].body:getWorldPoints(objects.platforms[i].shape:getPoints()))
 	--end
+	
+	--pulled from https://love2d.org/wiki/love.timer.sleep
+	-- the idea is if not enough time has passed for the next frame, then sleep until we're ready for it
+	local curTime = love.timer.getTime()
+	if settings.nextFrame <= curTime then
+		settings.nextFrame = curTime
+	else
+		love.timer.sleep(settings.nextFrame - curTime)
+	end
 end
 
 
