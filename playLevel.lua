@@ -44,6 +44,7 @@ function load(fileName, imageName)
 	settings.frameRate = 60
 	settings.deltaTime = 1 / settings.frameRate
 	settings.nextFrame = love.timer.getTime()
+	settings.goalReached = false
 
 	love.physics.setMeter(64) --the height of a meter our worlds will be 64px
 	world = love.physics.newWorld(0, 9.81*64, true) --create a world for the bodies to exist in with horizontal gravity of 0 and vertical gravity of 9.81
@@ -59,26 +60,18 @@ function load(fileName, imageName)
 
 	objects.player = Player.create(world, 325, 325, 20, 20)
 	objects.ghost = Ghost.create({}, {}, {}, 20, 20, "ghost.png")
+	objects.player:beginRecording()
 	
 	love.update, love.draw = update, draw
-  
-  
 end
-
 
 function addPhysicsObjects()
 	for x=1, #map do
 		for y=1, #map[x] do
-			if map[x][y] > 1 then
-				if map[x][y] == 4 then
-					local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, GOAL_PLATFORM)
-					table.insert(objects.platforms, newPlat)
-					objectBodies[newPlat.body] = newPlat
-				else
-					local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, BASIC_PLATFORM)
-					table.insert(objects.platforms, newPlat)
-					objectBodies[newPlat.body] = newPlat
-				end
+			if map[x][y] > 0 then
+				local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, map[x][y])
+				table.insert(objects.platforms, newPlat)
+				objectBodies[newPlat.body] = newPlat
 			end
 		end
 	end
@@ -89,10 +82,16 @@ function love.keypressed(key, scancode, isrepeat)
 		objects.player:endRecording()
 		objects.ghost:setPlaybackData(objects.player.recordedPoints, objects.player.recordedVelocity, {})
 		objects.ghost:beginPlayback()
-	elseif key == "r" then
-		objects.player:beginRecording()
 	elseif key == "escape" then
 		os.exit(0)
+	end
+end
+
+function finishedLevel()
+	if not objects.ghost.doPlayback then
+		objects.player:endRecording()
+		objects.ghost:setPlaybackData(objects.player.recordedPoints, objects.player.recordedVelocity, {})
+		objects.ghost:beginPlayback()
 	end
 end
  
@@ -100,16 +99,19 @@ function update(dt)
 	--some data upkeep for keeping a constant frame rate
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
 	
-	--moveMap((objects.player.body:getX() - objects.player.prevX) * dt, 0)
-  local prevX = objects.player.body:getX()
-	--local prevY = objects.player.body:getY()
+	if settings.goalReached then
+		--special code to complete level i guess or something idk
+		finishedLevel()
+	end
+	
+	local prevX = objects.player.body:getX()
 
 	world:update(dt) --this puts the world into motion
 	objects.player:update(dt)
 	objects.ghost:update(dt)
-	local colliders = objects.player:getGroundedBodies()
 
-	for i = 1, #objects.platforms do--#objects.platforms, 1, -1 do
+	local colliders = objects.player:getGroundedBodies()
+	for i = #objects.platforms, 1, -1 do
 		objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
 		objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
 		objects.platforms[i]:update(dt)
