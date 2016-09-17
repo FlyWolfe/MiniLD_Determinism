@@ -1,5 +1,7 @@
 require ("platform")
 require ("player")
+require ("button")
+require ("menu")
 
 local map = {} -- stores tiledata
 local mapWidth, mapHeight -- width and height in tiles
@@ -62,7 +64,21 @@ function load(fileName, imageName)
 	objects.ghost = Ghost.create({}, {}, {}, 20, 20, "ghost.png")
 	objects.player:beginRecording()
 	
+	objects.menus = {}
+	local replayButton = Button.create("Replay", replay)
+	local finishButton = Button.create("Next level", nextLevel)
+	local buttons = {replayButton, finishButton}
+	table.insert(objects.menus, Menu.create( 100, 100, 30, 85, buttons, "menuBackground.png", "menuOption.png", "menuOptionActive.png"))
+	
 	love.update, love.draw = update, draw
+end
+
+function replay()
+	print("replay!")
+end
+
+function nextLevel()
+	print("nextLevel!")
 end
 
 function addPhysicsObjects()
@@ -88,11 +104,7 @@ function love.keypressed(key, scancode, isrepeat)
 end
 
 function finishedLevel()
-	if not objects.ghost.doPlayback then
-		objects.player:endRecording()
-		objects.ghost:setPlaybackData(objects.player.recordedPoints, objects.player.recordedVelocity, {})
-		objects.ghost:beginPlayback()
-	end
+	objects.menus[1].active = true
 end
  
 function update(dt)
@@ -126,6 +138,10 @@ function update(dt)
 		end
 	end
 	
+	for i, m in pairs(objects.menus) do
+		m:update(dt)
+	end
+	
 	camera.x = camera.x + objects.player.body:getX() - prevX;
 	--camera.y = camera.y + objects.player.body:getY() - prevY;
 	
@@ -157,6 +173,10 @@ function draw()
 		love.timer.sleep(settings.nextFrame - curTime)
 	end
 	--love.graphics.translate(100,100)
+	
+	for i, m in pairs(objects.menus) do
+		m:draw()
+	end
 end
 
 
