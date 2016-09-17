@@ -7,6 +7,8 @@ function Player.create(world, x, y, width, height)
 	player.width = width
 	player.height = height
 	player.maxSpeed = 200
+	player.prevX = x
+	player.prevY = y
 	player.floatLeniency = 1
 	--place the body in the center of the world and make it dynamic, so it can move around
 	player.body = love.physics.newBody(world, x, y, "dynamic")
@@ -48,6 +50,33 @@ function Player:isGrounded()
 	end
 	
 	return result
+end
+
+function Player:isAtGoal()
+	local result = false
+	local contactList = self.body:getContactList()
+	if contactList ~= nil then
+		for i,b in pairs(contactList) do
+			local f1, f2 = b:getFixtures()
+			local plat = nil
+			if objectBodies[f1:getBody()] then
+				plat = objectBodies[f1:getBody()]
+			else
+				plat = objectBodies[f2:getBody()]
+			end
+			if plat ~= nil then
+				if plat.platformType == GOAL_PLATFORM then
+						print("GOAAALLLL")
+				end
+			end
+			--[[for j=1, #objectBodies do
+				if bodyList[i] == object.platforms[j].body and objects.platforms[j].platformType == GOAL_PLATFORM then
+					print("GOAAALLLL")
+					return
+				end
+			end--]]
+		end
+	end
 end
 
 --gets all platforms that the player is standing on
@@ -94,4 +123,5 @@ function Player:update(dt)
 	if love.keyboard.isDown("rctrl") then --set to whatever key you want to use
 		debug.debug()
 	end
+	self:isAtGoal()
   end

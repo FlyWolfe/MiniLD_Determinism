@@ -3,6 +3,7 @@ Platform.__index = Platform
 
 BASIC_PLATFORM = 1
 DISAPPEARING_PLATFORM = 2
+GOAL_PLATFORM = 3
 
 function createPlatform(world, x, y, width, height, density, platformType)
 	local block = {}

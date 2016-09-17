@@ -12,8 +12,11 @@ local zoomX, zoomY
 local tileSize = 32 -- size of tiles in pixels
 local tileQuads = {} -- parts of the tileset used for different tiles
 
+local camera = {}
+
 local file
 local image
+objectBodies = {}
 
 --Ghost Stuff
 ghostX = {}
@@ -41,6 +44,9 @@ function load(fileName, imageName)
 	love.graphics.setBackgroundColor(104, 136, 248) --set the background color to a nice blue
 	--love.window.setMode(650, 650) --set the window dimensions to 650 by 650
 	
+	camera.x = 0
+	camera.y = 0
+	
 	settings = {}
 	--frameRate in fps
 	settings.frameRate = 60
@@ -60,7 +66,7 @@ function load(fileName, imageName)
 	--table.insert(objects.platforms, createPlatform(world, 200, 400, 100, 50, 2, DISAPPEARING_PLATFORM))
 
 	objects.player = Player.create(world, 325, 325, 20, 20)
-	objects.ghost = createPlatform(world, 325, 325, 20, 20, BASIC_PLATFORM)
+	objects.ghost = createPlatform(world, 0, 0, 20, 20, BASIC_PLATFORM)
 	
 	love.update, love.draw = update, draw
   
@@ -71,7 +77,17 @@ end
 function addPhysicsObjects()
 	for x=1, #map do
 		for y=1, #map[x] do
-			if map[x][y] > 1 then table.insert(objects.platforms, createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, BASIC_PLATFORM)) end
+			if map[x][y] > 1 then
+				if map[x][y] == 4 then
+					local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, GOAL_PLATFORM)
+					table.insert(objects.platforms, newPlat)
+					objectBodies[newPlat.body] = newPlat
+				else
+					local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, BASIC_PLATFORM)
+					table.insert(objects.platforms, newPlat)
+					objectBodies[newPlat.body] = newPlat
+				end
+			end
 		end
 	end
 end
@@ -83,7 +99,7 @@ function update(dt)
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
 	
 	--camera movement
-	if love.keyboard.isDown("up")  then
+	--[[if love.keyboard.isDown("up")  then
 		moveMap(0, -0.2 * tileSize * dt)
 	end
 	if love.keyboard.isDown("down")  then
@@ -94,8 +110,11 @@ function update(dt)
 	end
 	if love.keyboard.isDown("right")  then
 		moveMap(0.2 * tileSize * dt, 0)
-	end
-  
+	end--]]
+	--moveMap((objects.player.body:getX() - objects.player.prevX) * dt, 0)
+  local prevX = objects.player.body:getX()
+	--local prevY = objects.player.body:getY()
+	
 	world:update(dt) --this puts the world into motion
 	objects.player:update(dt)
 	local colliders = objects.player:getGroundedBodies()
@@ -114,6 +133,10 @@ function update(dt)
 			table.remove(objects.platforms, i)
 		end
 	end
+	
+	camera.x = camera.x + objects.player.body:getX() - prevX;
+	--camera.y = camera.y + objects.player.body:getY() - prevY;
+	
 	prevMapX = mapX
 	prevMapY = mapY
 	
@@ -124,8 +147,6 @@ function update(dt)
 		table.insert(ghostVelX, velX)
 		table.insert(ghostVelY, velY)
 	elseif testCount <= 200 then
-	--debug.debug()
-	print(ghostX[testCount-100])
 		objects.ghost.body:setX(ghostX[testCount-100])
 		objects.ghost.body:setY(ghostY[testCount-100])
 		objects.ghost.body:setLinearVelocity(ghostVelX[testCount-100], ghostVelY[testCount-100])
@@ -139,6 +160,7 @@ function draw()
 	love.graphics.print("FPS: "..love.timer.getFPS(), 10, 20)
 
 	--love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
+	local playerX, playerY, player
 	love.graphics.polygon("fill", objects.player.body:getWorldPoints(objects.player.shape:getPoints()))
 	if testCount > 100 then love.graphics.polygon("fill", objects.ghost.body:getWorldPoints(objects.ghost.shape:getPoints())) end
 	
@@ -155,6 +177,7 @@ function draw()
 	else
 		love.timer.sleep(settings.nextFrame - curTime)
 	end
+	love.graphics.translate(camera.x,0)
 end
 
 

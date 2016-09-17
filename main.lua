@@ -1,26 +1,6 @@
 require ("platform")
 require ("player")
 
-local map = {} -- stores tiledata
-local mapWidth, mapHeight -- width and height in tiles
- 
-local mapX, mapY -- view x,y in tiles. can be a fractional value like 3.25.
-local prevMapX, prevMapY
-local tilesDisplayWidth, tilesDisplayHeight -- number of tiles to show
-local zoomX, zoomY
- 
-local tileSize = 32 -- size of tiles in pixels
-local tileQuads = {} -- parts of the tileset used for different tiles
-
-
---Ghost Stuff
-ghostX = {}
-ghostY = {}
-ghostVelX = {}
-ghostVelY = {}
-
-testCount = 0
-
 function love.load()
 	--initial graphics setup
 	love.graphics.setBackgroundColor(104, 136, 248) --set the background color to a nice blue
