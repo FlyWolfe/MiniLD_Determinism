@@ -32,7 +32,7 @@ end
 
 function Player:isStandingOn(contact)
 	x1,y1,x2,y2 = contact:getPositions()
-	if self:withinRange(y1, self.body:getY() + (self.height / 2)) and self:withinRange(y2, self.body:getY() + (self.height / 2)) then 
+	if self:withinRange(y1, self.body:getY() + (self.height / 2)) and self:withinRange(y2, self.body:getY() + (self.height / 2)) and not self:withinRange(x1, x2) then 
 		return true
 	end
 	return false
@@ -74,8 +74,8 @@ function Player:getGroundedBodies()
 end
 
 function Player:clearRecordedData()
-	player.recordedPoints = {}
-	player.recordedVelocity = {}
+	self.recordedPoints = {}
+	self.recordedVelocity = {}
 end
 
 function Player:beginRecording()
@@ -120,7 +120,7 @@ function Player:update(dt)
 		point.y = self.body:getY()
 		table.insert(self.recordedPoints, point)
 		local velocity = {}
-		velocity.x, velocity.y = objects.self.body:getLinearVelocity()
+		velocity.x, velocity.y = self.body:getLinearVelocity()
 		table.insert(self.recordedVelocity, velocity)
 	end
   end
