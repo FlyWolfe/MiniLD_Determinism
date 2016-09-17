@@ -1,5 +1,6 @@
 require ("platform")
 require ("player")
+require ("ghost")
 
 local map = {} -- stores tiledata
 local mapWidth, mapHeight -- width and height in tiles
@@ -12,14 +13,6 @@ local zoomX, zoomY
 local tileSize = 32 -- size of tiles in pixels
 local tileQuads = {} -- parts of the tileset used for different tiles
 
-
---Ghost Stuff
-ghostX = {}
-ghostY = {}
-ghostVelX = {}
-ghostVelY = {}
-
-testCount = 0
 
 function love.load()
 	--initial graphics setup
@@ -49,12 +42,9 @@ function love.load()
 
 	--Create Platforms
 	addPhysicsObjects()
-	--table.insert(objects.platforms, createPlatform(world, love.graphics.getWidth() / 2, love.graphics.getHeight() - 25, love.graphics.getWidth(), 50, 10, BASIC_PLATFORM))
-	--table.insert(objects.platforms, createPlatform(world, 200, 550, 50, 75, 5, DISAPPEARING_PLATFORM))
-	--table.insert(objects.platforms, createPlatform(world, 200, 400, 100, 50, 2, DISAPPEARING_PLATFORM))
 
 	objects.player = Player.create(world, 325, 325, 20, 20)
-	objects.ghost = createPlatform(world, 325, 325, 20, 20, BASIC_PLATFORM)
+	objects.ghost = Ghost.create({}, {}, {}, 20, 20)
   
   
 end
@@ -70,7 +60,6 @@ end
 
  
 function love.update(dt)
-	testCount = testCount + 1
 	--some data upkeep for keeping a constant frame rate
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
 	
@@ -87,9 +76,19 @@ function love.update(dt)
 	if love.keyboard.isDown("right")  then
 		moveMap(0.2 * tileSize * dt, 0)
 	end
+	
+	if love.keyboard.isDown("r") then
+		objects.player:beginRecording()
+	end
+	if love.keyboard.isDown("p") then
+		objects.player:endRecording()
+		objects.ghost:setPlaybackData(objects.player.recordedPoints, objects.player.recordedVelocity)
+		objects.ghost:beginPlayback()
+	end
   
 	world:update(dt) --this puts the world into motion
 	objects.player:update(dt)
+	objects.ghost:update(dt)
 	local colliders = objects.player:getGroundedBodies()
 
 	for i = 1, #objects.platforms do--#objects.platforms, 1, -1 do
@@ -108,20 +107,6 @@ function love.update(dt)
 	end
 	prevMapX = mapX
 	prevMapY = mapY
-	
-	if testCount <= 100 then
-		local velX, velY = objects.player.body:getLinearVelocity()
-		table.insert(ghostX, objects.player.body:getX())
-		table.insert(ghostY, objects.player.body:getY())
-		table.insert(ghostVelX, velX)
-		table.insert(ghostVelY, velY)
-	elseif testCount <= 200 then
-	--debug.debug()
-	print(ghostX[testCount-100])
-		objects.ghost.body:setX(ghostX[testCount-100])
-		objects.ghost.body:setY(ghostY[testCount-100])
-		objects.ghost.body:setLinearVelocity(ghostVelX[testCount-100], ghostVelY[testCount-100])
-	end
 end
  
 function love.draw()
@@ -132,12 +117,10 @@ function love.draw()
 
 	--love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
 	love.graphics.polygon("fill", objects.player.body:getWorldPoints(objects.player.shape:getPoints()))
-	if testCount > 100 then love.graphics.polygon("fill", objects.ghost.body:getWorldPoints(objects.ghost.shape:getPoints())) end
 	
-	--love.graphics.setColor(50, 50, 50) -- set the drawing color to grey for the blocks
-	--for i = 1, #objects.platforms do
-		--love.graphics.polygon("fill", objects.platforms[i].body:getWorldPoints(objects.platforms[i].shape:getPoints()))
-	--end
+	if objects.ghost.doPlayback then
+		objects.ghost:draw()
+	end
 	
 	--pulled from https://love2d.org/wiki/love.timer.sleep
 	-- the idea is if not enough time has passed for the next frame, then sleep until we're ready for it
@@ -193,8 +176,8 @@ function setupMapView()
 	tilesDisplayWidth = math.floor(love.graphics.getWidth() / tileSize) + 2
 	tilesDisplayHeight = math.floor(love.graphics.getHeight() / tileSize) + 2
 
-	zoomX = 1
-	zoomY = 1
+	zoomX = 2
+	zoomY = 2
 end
  
 function setupTileset()

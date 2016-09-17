@@ -8,6 +8,9 @@ function Player.create(world, x, y, width, height)
 	player.height = height
 	player.maxSpeed = 200
 	player.floatLeniency = 1
+	player.recordedPoints = {}
+	player.recordedVelocity = {}
+	player.isRecording = false
 	--place the body in the center of the world and make it dynamic, so it can move around
 	player.body = love.physics.newBody(world, x, y, "dynamic")
 	player.body:setFixedRotation(true)
@@ -70,6 +73,20 @@ function Player:getGroundedBodies()
 	return result
 end
 
+function Player:clearRecordedData()
+	player.recordedPoints = {}
+	player.recordedVelocity = {}
+end
+
+function Player:beginRecording()
+	self:clearRecordedData()
+	self.isRecording = true
+end
+
+function Player:endRecording()
+	self.isRecording = false
+end
+
 function Player:update(dt)
 	--press the right arrow key to push the ball to the right
 	if love.keyboard.isDown("right") then
@@ -93,5 +110,17 @@ function Player:update(dt)
 	end
 	if love.keyboard.isDown("rctrl") then --set to whatever key you want to use
 		debug.debug()
+	end
+	
+	
+	--record location and speed if necessary
+	if self.isRecording then
+		local point = {}
+		point.x = self.body:getX()
+		point.y = self.body:getY()
+		table.insert(self.recordedPoints, point)
+		local velocity = {}
+		velocity.x, velocity.y = objects.self.body:getLinearVelocity()
+		table.insert(self.recordedVelocity, velocity)
 	end
   end
