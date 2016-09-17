@@ -158,9 +158,12 @@ function setupMap()
 	local count = 1
 	for line in love.filesystem.lines("gameMap.tilemap") do
 		local tempParse = string.explode(line, ",")
-		map[count] = {}
+		--map[count] = {}
 		for i=1, #tempParse do
-			map[count][i] = tonumber(tempParse[i])
+			if map[i] == nil then
+				map[i] = {}
+			end
+			map[i][count] = tonumber(tempParse[i])
 		end
 		count = count + 1
 	end
