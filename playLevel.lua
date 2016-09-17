@@ -1,18 +1,17 @@
 require ("platform")
 require ("player")
+require ("camera")
 
 local map = {} -- stores tiledata
-local mapWidth, mapHeight -- width and height in tiles
+mapWidth, mapHeight = 0,0 -- width and height in tiles
  
 local mapX, mapY -- view x,y in tiles. can be a fractional value like 3.25.
 local prevMapX, prevMapY
 local tilesDisplayWidth, tilesDisplayHeight -- number of tiles to show
 local zoomX, zoomY
  
-local tileSize = 32 -- size of tiles in pixels
+tileSize = 32 -- size of tiles in pixels
 local tileQuads = {} -- parts of the tileset used for different tiles
-
-local camera = {}
 
 local file
 local image
@@ -35,9 +34,6 @@ function load(fileName, imageName)
 	--initial graphics setup
 	love.graphics.setBackgroundColor(104, 136, 248) --set the background color to a nice blue
 	--love.window.setMode(650, 650) --set the window dimensions to 650 by 650
-	
-	camera.x = 0
-	camera.y = 0
 	
 	settings = {}
 	--frameRate in fps
@@ -100,8 +96,8 @@ function update(dt)
 	--some data upkeep for keeping a constant frame rate
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
 	
-	--moveMap((objects.player.body:getX() - objects.player.prevX) * dt, 0)
   local prevX = objects.player.body:getX()
+	local prevCamX = camera.x
 	--local prevY = objects.player.body:getY()
 
 	world:update(dt) --this puts the world into motion
@@ -110,8 +106,8 @@ function update(dt)
 	local colliders = objects.player:getGroundedBodies()
 
 	for i = 1, #objects.platforms do--#objects.platforms, 1, -1 do
-		objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
-		objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
+		--objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
+		--objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
 		objects.platforms[i]:update(dt)
 		--if we are colliding with the current platform, then activate it
 		for j = 1, #colliders, 1 do
@@ -124,8 +120,10 @@ function update(dt)
 		end
 	end
 	
-	camera.x = camera.x + objects.player.body:getX() - prevX;
-	--camera.y = camera.y + objects.player.body:getY() - prevY;
+	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
+	--camera.y = camera.y + objects.player.body:getY() - prevY
+	--moveMap((objects.player.body:getX() - prevX) / tileSize, 0)
+	moveMap((camera.x - prevCamX) / tileSize, 0)
 	
 	prevMapX = mapX
 	prevMapY = mapY
@@ -136,6 +134,7 @@ function draw()
 	math.floor(-zoomX*(mapX%1)*tileSize), math.floor(-zoomY*(mapY%1)*tileSize),
 	0, zoomX, zoomY)
 	love.graphics.print("FPS: "..love.timer.getFPS(), 10, 20)
+		camera:set()
 	
 	--love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
 	local playerX, playerY, player
@@ -154,7 +153,8 @@ function draw()
 	else
 		love.timer.sleep(settings.nextFrame - curTime)
 	end
-	--love.graphics.translate(100,100)
+	updateTilesetBatch()
+	camera:unset()
 end
 
 
@@ -230,19 +230,19 @@ end
 function updateTilesetBatch()
 	tilesetBatch:clear()
 	for x=1, tilesDisplayWidth do
-	for y=1, tilesDisplayHeight do
-		local test = map[x+math.floor(mapX) - 1][y+math.floor(mapY) - 1]
-		local test2 = tileQuads[test]
-		tilesetBatch:add(test2, (x-1)*tileSize, (y-1)*tileSize)
-	end
+		for y=1, tilesDisplayHeight do
+			local test = map[x+math.floor(mapX) - 1][y+math.floor(mapY) - 1]
+			local test2 = tileQuads[test]
+			tilesetBatch:add(test2, (x-1)*tileSize, (y-1)*tileSize)
+		end
 	end
 	tilesetBatch:flush()
 end
  
 -- central function for moving the map
 function moveMap(dx, dy)
-	oldMapX = mapX
-	oldMapY = mapY
+	local oldMapX = mapX
+	local oldMapY = mapY
 	mapX = math.max(math.min(mapX + dx, mapWidth - tilesDisplayWidth), 1)
 	mapY = math.max(math.min(mapY + dy, mapHeight - tilesDisplayHeight), 1)
 	-- only update if we actually moved
