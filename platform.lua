@@ -34,6 +34,11 @@ function Platform:activate()
 			print("make the platform DISAPPEAR!")
 			self.deleteCountdown = self.deleteDuration
 		end
+	elseif self.platformType == GOAL_PLATFORM then
+		if not settings.goalReached then
+			settings.goalReached = true
+			print("goal!")
+		end
 	end
 end
 
