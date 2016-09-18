@@ -134,7 +134,8 @@ function update(dt)
 		end
 	end
 	
-
+	
+	
 	--Powerup collision
 	if objects.powerup ~= nil and objects.powerup:isColliding(objects.player.body:getX(), objects.player.body:getY(), objects.player.width, objects.player.height) then
 	print("should remove")
@@ -146,11 +147,10 @@ function update(dt)
 	for i = 1, #objects.enemies do
 		objects.enemies[i]:update(dt)
 	end
-
+	
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
 	--camera.y = camera.y + objects.player.body:getY() - prevY
 	--moveMap((objects.player.body:getX() - prevX) / tileSize, 0)
-
 	moveMap((camera.x - prevCamX) / tileSize, 0)
 	
 	prevMapX = mapX
@@ -182,6 +182,8 @@ function draw()
 	if (objects.powerup ~= nil) then
 		objects.powerup:draw()
 	end
+	
+	
 	
 	--pulled from https://love2d.org/wiki/love.timer.sleep
 	-- the idea is if not enough time has passed for the next frame, then sleep until we're ready for it
