@@ -120,8 +120,6 @@ function update(dt)
 
 	local colliders = objects.player:getGroundedBodies()
 	for i = #objects.platforms, 1, -1 do
-		objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
-		objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
 		objects.platforms[i]:update(dt)
 		--if we are colliding with the current platform, then activate it
 		for j = 1, #colliders, 1 do
@@ -138,8 +136,8 @@ function update(dt)
 		m:update(dt)
 	end
 	
-	moveMap((camera.x - prevCamX) / tileSize, 0)
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
+	moveMap((camera.x - prevCamX) / tileSize, 0)
 	
 	prevMapX = mapX
 	prevMapY = mapY
