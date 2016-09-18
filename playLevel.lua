@@ -3,6 +3,8 @@ require ("player")
 require ("camera")
 require ("enemy")
 require ("powerup")
+require ("button")
+require ("menu")
 
 local map = {} -- stores tiledata
 mapWidth, mapHeight = 0,0 -- width and height in tiles
@@ -42,6 +44,7 @@ function load(fileName, imageName, positionFileName)
 	settings.frameRate = 60
 	settings.deltaTime = 1 / settings.frameRate
 	settings.nextFrame = love.timer.getTime()
+	settings.goalReached = false
 
 	love.physics.setMeter(64) --the height of a meter our worlds will be 64px
 	world = love.physics.newWorld(0, 9.81*64, true) --create a world for the bodies to exist in with horizontal gravity of 0 and vertical gravity of 9.81
@@ -70,6 +73,12 @@ function load(fileName, imageName, positionFileName)
 	
 	objects.powerup = Powerup.create(world,400, 300, 20, 20, SPEED_POWERUP, "powerup.png")
 	
+	objects.menus = {}
+	local replayButton = Button.create("Replay", replay)
+	local finishButton = Button.create("Next level", nextLevel)
+	local buttons = {replayButton, finishButton}
+	table.insert(objects.menus, Menu.create( 100, 100, 30, 85, buttons, "menuBackground.png", "menuOption.png", "menuOptionActive.png"))
+	
 	love.update, love.draw = update, draw
   
   
@@ -95,13 +104,7 @@ function addPhysicsObjects()
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	if key == "p" then
-		objects.player:endRecording()
-		objects.ghost:setPlaybackData(objects.player.recordedPoints, objects.player.recordedVelocity, {})
-		objects.ghost:beginPlayback()
-	elseif key == "r" then
-		objects.player:beginRecording()
-	elseif key == "escape" then
+	if key == "escape" then
 		os.exit(0)
 	end
 end
@@ -110,47 +113,49 @@ function update(dt)
 	--some data upkeep for keeping a constant frame rate
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
 	
-  local prevX = objects.player.body:getX()
-	local prevCamX = camera.x
-	--local prevY = objects.player.body:getY()
+	if settings.goalReached then
+		--special code to complete level i guess or something idk
+		finishedLevel()
+	else
+		world:update(dt) --this puts the world into motion
+		objects.player:update(dt)
+		objects.ghost:update(dt)
+		local colliders = objects.player:getGroundedBodies()
 
-	world:update(dt) --this puts the world into motion
-	objects.player:update(dt)
-	objects.ghost:update(dt)
-	local colliders = objects.player:getGroundedBodies()
-
-	for i = 1, #objects.platforms do--#objects.platforms, 1, -1 do
-		--objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
-		--objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
-		objects.platforms[i]:update(dt)
-		--if we are colliding with the current platform, then activate it
-		for j = 1, #colliders, 1 do
-			if colliders[j] == objects.platforms[i].fixture then
-				objects.platforms[i]:activate()
+		for i = #objects.platforms, 1, -1 do
+			objects.platforms[i]:update(dt)
+			--if we are colliding with the current platform, then activate it
+			for j = 1, #colliders, 1 do
+				if colliders[j] == objects.platforms[i].fixture then
+					objects.platforms[i]:activate()
+				end
+			end
+			if objects.platforms[i].toDelete then
+				table.remove(objects.platforms, i)
 			end
 		end
-		if objects.platforms[i].toDelete then
-			table.remove(objects.platforms, i)
+		
+		
+		
+		--Powerup collision
+		if objects.powerup ~= nil and objects.powerup:isColliding(objects.player.body:getX(), objects.player.body:getY(), objects.player.width, objects.player.height) then
+			print("should remove")
+			objects.powerup = nil
+		end
+		
+		--Enemies update
+		for i = 1, #objects.enemies do
+			objects.enemies[i]:update(dt)
 		end
 	end
 	
-	
-	
-	--Powerup collision
-	if objects.powerup ~= nil and objects.powerup:isColliding(objects.player.body:getX(), objects.player.body:getY(), objects.player.width, objects.player.height) then
-	print("should remove")
-		--table.remove(objects, powerup)
-		objects.powerup = nil
+	for i, m in pairs(objects.menus) do
+		m:update(dt)
 	end
 	
-	--Enemies update
-	for i = 1, #objects.enemies do
-		objects.enemies[i]:update(dt)
-	end
-	
+	local prevX = objects.player.body:getX()
+	local prevCamX = camera.x
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
-	--camera.y = camera.y + objects.player.body:getY() - prevY
-	--moveMap((objects.player.body:getX() - prevX) / tileSize, 0)
 	moveMap((camera.x - prevCamX) / tileSize, 0)
 	
 	prevMapX = mapX
@@ -164,7 +169,6 @@ function draw()
 	love.graphics.print("FPS: "..love.timer.getFPS(), 10, 20)
 		camera:set()
 	
-	--love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
 	local playerX, playerY, player
 	
 	love.graphics.polygon("fill", objects.player.body:getWorldPoints(objects.player.shape:getPoints()))
@@ -195,6 +199,12 @@ function draw()
 	end
 	updateTilesetBatch()
 	camera:unset()
+	
+	
+	for i, m in pairs(objects.menus) do
+		m:draw()
+	end
+	
 end
 
 
@@ -216,8 +226,6 @@ function setupMap()
 		count = count + 1
 	end
 	
-	--mapWidth = math.floor(love.graphics.getWidth() / tileSize) * 10
-	--mapHeight = math.floor(love.graphics.getHeight() / tileSize) * 10
 	mapWidth = #map
 	mapHeight = #map[1]
 end
@@ -251,7 +259,6 @@ end
 function setupTileset()
 	local tilesetImage = love.graphics.newImage(image)
 	tilesetImage:setFilter("nearest", "linear") -- this "linear filter" removes some artifacts if we were to scale the tiles
-	--tileSize = 32
 
 	local tilesWide = tilesetImage:getWidth() / tileSize
 	local tilesHigh = tilesetImage:getHeight() / tileSize
@@ -291,4 +298,16 @@ function moveMap(dx, dy)
 	if math.floor(mapX) ~= math.floor(oldMapX) or math.floor(mapY) ~= math.floor(oldMapY) then
 		updateTilesetBatch()
 	end
+end
+
+function finishedLevel()
+	objects.menus[1].active = true
+end
+
+function replay()
+	print("replay!")
+end
+
+function nextLevel()
+	print("nextLevel!")
 end

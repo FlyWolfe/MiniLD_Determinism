@@ -60,33 +60,6 @@ function Player:isGrounded()
 	return result
 end
 
-function Player:isAtGoal()
-	local result = false
-	local contactList = self.body:getContactList()
-	if contactList ~= nil then
-		for i,b in pairs(contactList) do
-			local f1, f2 = b:getFixtures()
-			local plat = nil
-			if objectBodies[f1:getBody()] then
-				plat = objectBodies[f1:getBody()]
-			else
-				plat = objectBodies[f2:getBody()]
-			end
-			if plat ~= nil then
-				if plat.platformType == GOAL_PLATFORM then
-						--To Do
-				end
-			end
-			--[[for j=1, #objectBodies do
-				if bodyList[i] == object.platforms[j].body and objects.platforms[j].platformType == GOAL_PLATFORM then
-					print("GOAAALLLL")
-					return
-				end
-			end--]]
-		end
-	end
-end
-
 --gets all platforms that the player is standing on
 function Player:getGroundedBodies()
 	local result = {}
@@ -144,7 +117,6 @@ function Player:update(dt)
 	elseif x < -self.maxSpeed then
 		self.body:setLinearVelocity(-self.maxSpeed,y)
 	end
-	self:isAtGoal()
 	--record location and speed if necessary
 	if self.isRecording then
 		local point = {}
