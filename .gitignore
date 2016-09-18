@@ -40,3 +40,6 @@ luac.out
 *.hex
 
 *.love
+
+gameMap.tilemap
+gameMap.tilemap
