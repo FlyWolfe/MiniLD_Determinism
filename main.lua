@@ -15,7 +15,7 @@ function love.load()
 	settings.nextFrame = love.timer.getTime()
 	
 	require ("playLevel")
-	load("gameMap.tilemap", "Tileset.png")
+	load("gameMap.tilemap", "Tileset.png", "enemyPositions.loc")
 	
 end
 
