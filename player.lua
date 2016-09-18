@@ -1,10 +1,6 @@
 Player = {}
 Player.__index = Player
 
-DOUBLEJUMP_POWERUP = 1
-FORECEFIELD_POWERUP = 2
-SPEED_POWERUP = 3
-
 function Player.create(world, x, y, width, height)
 	local player = {}
 	setmetatable(player, Player)
@@ -17,7 +13,6 @@ function Player.create(world, x, y, width, height)
 	player.recordedPoints = {}
 	player.recordedVelocity = {}
 	player.isRecording = false
-	player.powerups = {}
 	--place the body in the center of the world and make it dynamic, so it can move around
 	player.body = love.physics.newBody(world, x, y, "dynamic")
 	player.body:setFixedRotation(true)
@@ -95,12 +90,19 @@ function Player:endRecording()
 end
 
 function Player:update(dt)
-	x, y = self.body:getLinearVelocity()
 	--press the right arrow key to push the ball to the right
 	if love.keyboard.isDown("right") then
 		self.body:applyForce(100, 0)
+		x, y = self.body:getLinearVelocity()
+		if math.abs(x) > self.maxSpeed then
+			self.body:setLinearVelocity(self.maxSpeed,y)
+		end
 	elseif love.keyboard.isDown("left") then --press the left arrow key to push the ball to the left
 		self.body:applyForce(-100, 0)
+		x, y = self.body:getLinearVelocity()
+		if math.abs(x) > self.maxSpeed then
+			self.body:setLinearVelocity(-self.maxSpeed,y)
+		end
 	end
 	if love.keyboard.isDown("up") then
 		if self:isGrounded() then
@@ -110,12 +112,6 @@ function Player:update(dt)
 	end
 	if love.keyboard.isDown("rctrl") then --set to whatever key you want to use
 		debug.debug()
-	end
-	
-	if x > self.maxSpeed then
-		self.body:setLinearVelocity(self.maxSpeed,y)
-	elseif x < -self.maxSpeed then
-		self.body:setLinearVelocity(-self.maxSpeed,y)
 	end
 	self:isAtGoal()
 
