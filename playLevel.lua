@@ -1,6 +1,8 @@
 require ("platform")
 require ("player")
 require ("camera")
+require ("enemy")
+require ("powerup")
 
 local map = {} -- stores tiledata
 mapWidth, mapHeight = 0,0 -- width and height in tiles
@@ -17,7 +19,7 @@ local file
 local image
 objectBodies = {}
 
-function load(fileName, imageName)
+function load(fileName, imageName, positionFileName)
 
 	--Set file names
 	file = fileName
@@ -46,6 +48,7 @@ function load(fileName, imageName)
 
 	objects = {} -- table to hold all our physical objects
 	objects.platforms = {} --table to hold all platforms
+	objects.enemies = {} --table to hold all enemies
 
 	--Create Platforms
 	addPhysicsObjects()
@@ -55,6 +58,17 @@ function load(fileName, imageName)
 
 	objects.player = Player.create(world, 325, 325, 20, 20)
 	objects.ghost = Ghost.create({}, {}, {}, 20, 20, "ghost.png")
+	
+	--Grab enemy locations from file and add them to game
+	local counter = 1
+	for line in love.filesystem.lines(positionFileName) do
+		print("pass: " .. counter)
+		local tempParse = string.explode(line, ",")
+		objects.enemies[counter] = Enemy.create(world, tonumber(tempParse[1]), tonumber(tempParse[2]), tonumber(tempParse[3]), tonumber(tempParse[4]), tonumber(tempParse[5]), tonumber(tempParse[6]), "enemy.png")
+		counter = counter + 1
+	end
+	
+	objects.powerup = Powerup.create(world,400, 300, 20, 20, SPEED_POWERUP, "powerup.png")
 	
 	love.update, love.draw = update, draw
   
@@ -120,6 +134,20 @@ function update(dt)
 		end
 	end
 	
+	
+	
+	--Powerup collision
+	if objects.powerup ~= nil and objects.powerup:isColliding(objects.player.body:getX(), objects.player.body:getY(), objects.player.width, objects.player.height) then
+	print("should remove")
+		--table.remove(objects, powerup)
+		objects.powerup = nil
+	end
+	
+	--Enemies update
+	for i = 1, #objects.enemies do
+		objects.enemies[i]:update(dt)
+	end
+	
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
 	--camera.y = camera.y + objects.player.body:getY() - prevY
 	--moveMap((objects.player.body:getX() - prevX) / tileSize, 0)
@@ -144,6 +172,18 @@ function draw()
 	if objects.ghost.doPlayback then
 		objects.ghost:draw()
 	end
+	
+	--Draw Enemies
+	for i = 1, #objects.enemies do
+		objects.enemies[i]:draw()
+	end
+	
+	--Draw Powerups
+	if (objects.powerup ~= nil) then
+		objects.powerup:draw()
+	end
+	
+	
 	
 	--pulled from https://love2d.org/wiki/love.timer.sleep
 	-- the idea is if not enough time has passed for the next frame, then sleep until we're ready for it
@@ -231,9 +271,11 @@ function updateTilesetBatch()
 	tilesetBatch:clear()
 	for x=1, tilesDisplayWidth do
 		for y=1, tilesDisplayHeight do
-			local test = map[x+math.floor(mapX) - 1][y+math.floor(mapY) - 1]
-			local test2 = tileQuads[test]
-			tilesetBatch:add(test2, (x-1)*tileSize, (y-1)*tileSize)
+			if map[x+math.floor(mapX) - 1][y+math.floor(mapY) - 1] ~= 1 then
+				local test = map[x+math.floor(mapX) - 1][y+math.floor(mapY) - 1]
+				local test2 = tileQuads[test]
+				tilesetBatch:add(test2, (x-1)*tileSize, (y-1)*tileSize)
+			end
 		end
 	end
 	tilesetBatch:flush()
