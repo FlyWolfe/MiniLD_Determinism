@@ -113,6 +113,9 @@ function update(dt)
 	--some data upkeep for keeping a constant frame rate
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
 	
+	local prevX = objects.player.body:getX()
+	local prevCamX = camera.x
+	
 	if settings.goalReached then
 		--special code to complete level i guess or something idk
 		finishedLevel()
@@ -153,8 +156,6 @@ function update(dt)
 		m:update(dt)
 	end
 	
-	local prevX = objects.player.body:getX()
-	local prevCamX = camera.x
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
 	moveMap((camera.x - prevCamX) / tileSize, 0)
 	
@@ -167,7 +168,8 @@ function draw()
 	math.floor(-zoomX*(mapX%1)*tileSize), math.floor(-zoomY*(mapY%1)*tileSize),
 	0, zoomX, zoomY)
 	love.graphics.print("FPS: "..love.timer.getFPS(), 10, 20)
-		camera:set()
+	
+	camera:set()
 	
 	local playerX, playerY, player
 	
