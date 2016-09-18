@@ -59,13 +59,12 @@ function load(fileName, imageName)
 	objects.player = Player.create(world, 325, 325, 20, 20)
 	objects.ghost = Ghost.create({}, {}, {}, 20, 20, "ghost.png")
 	objects.player:beginRecording()
-	
+
 	objects.menus = {}
 	local replayButton = Button.create("Replay", replay)
 	local finishButton = Button.create("Next level", nextLevel)
 	local buttons = {replayButton, finishButton}
 	table.insert(objects.menus, Menu.create( 100, 100, 30, 85, buttons, "menuBackground.png", "menuOption.png", "menuOptionActive.png"))
-	
 	love.update, love.draw = update, draw
 end
 
@@ -143,7 +142,7 @@ function update(dt)
 	for i = 1, #objects.enemies do
 		objects.enemies[i]:update(dt)
 	end
-	
+
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
 	--camera.y = camera.y + objects.player.body:getY() - prevY
 	--moveMap((objects.player.body:getX() - prevX) / tileSize, 0)
