@@ -117,7 +117,7 @@ function Player:update(dt)
 	elseif x < -self.maxSpeed then
 		self.body:setLinearVelocity(-self.maxSpeed,y)
 	end
-	--self:isAtGoal()
+	self:isAtGoal()
 
 	--record location and speed if necessary
 	if self.isRecording then
