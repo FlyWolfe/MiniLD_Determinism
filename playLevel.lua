@@ -1,7 +1,5 @@
 require ("platform")
 require ("player")
-require ("button")
-require ("menu")
 require ("camera")
 require ("enemy")
 require ("powerup")
@@ -44,7 +42,6 @@ function load(fileName, imageName, positionFileName)
 	settings.frameRate = 60
 	settings.deltaTime = 1 / settings.frameRate
 	settings.nextFrame = love.timer.getTime()
-	settings.goalReached = false
 
 	love.physics.setMeter(64) --the height of a meter our worlds will be 64px
 	world = love.physics.newWorld(0, 9.81*64, true) --create a world for the bodies to exist in with horizontal gravity of 0 and vertical gravity of 9.81
@@ -61,13 +58,6 @@ function load(fileName, imageName, positionFileName)
 
 	objects.player = Player.create(world, 325, 325, 20, 20)
 	objects.ghost = Ghost.create({}, {}, {}, 20, 20, "ghost.png")
-	objects.player:beginRecording()
-	
-	objects.menus = {}
-	local replayButton = Button.create("Replay", replay)
-	local finishButton = Button.create("Next level", nextLevel)
-	local buttons = {replayButton, finishButton}
-	table.insert(objects.menus, Menu.create( 100, 100, 30, 85, buttons, "menuBackground.png", "menuOption.png", "menuOptionActive.png"))
 	
 	--Grab enemy locations from file and add them to game
 	local counter = 1
@@ -81,23 +71,24 @@ function load(fileName, imageName, positionFileName)
 	objects.powerup = Powerup.create(world,400, 300, 20, 20, SPEED_POWERUP, "powerup.png")
 	
 	love.update, love.draw = update, draw
+  
+  
 end
 
-function replay()
-	print("replay!")
-end
-
-function nextLevel()
-	print("nextLevel!")
-end
 
 function addPhysicsObjects()
 	for x=1, #map do
 		for y=1, #map[x] do
-			if map[x][y] > 0 then
-				local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, map[x][y])
-				table.insert(objects.platforms, newPlat)
-				objectBodies[newPlat.body] = newPlat
+			if map[x][y] > 1 then
+				if map[x][y] == 4 then
+					local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, GOAL_PLATFORM)
+					table.insert(objects.platforms, newPlat)
+					objectBodies[newPlat.body] = newPlat
+				else
+					local newPlat = createPlatform(world, (x-1)*(tileSize)+tileSize/2, (y-1)*(tileSize)+tileSize/2, tileSize, tileSize, 5, BASIC_PLATFORM)
+					table.insert(objects.platforms, newPlat)
+					objectBodies[newPlat.body] = newPlat
+				end
 			end
 		end
 	end
@@ -108,34 +99,29 @@ function love.keypressed(key, scancode, isrepeat)
 		objects.player:endRecording()
 		objects.ghost:setPlaybackData(objects.player.recordedPoints, objects.player.recordedVelocity, {})
 		objects.ghost:beginPlayback()
+	elseif key == "r" then
+		objects.player:beginRecording()
 	elseif key == "escape" then
 		os.exit(0)
 	end
-end
-
-function finishedLevel()
-	objects.menus[1].active = true
 end
  
 function update(dt)
 	--some data upkeep for keeping a constant frame rate
 	settings.nextFrame = settings.nextFrame + settings.deltaTime
-	if settings.goalReached then
-		--special code to complete level i guess or something idk
-		finishedLevel()
-	end
 	
-	local prevX = objects.player.body:getX()
+  local prevX = objects.player.body:getX()
 	local prevCamX = camera.x
+	--local prevY = objects.player.body:getY()
 
 	world:update(dt) --this puts the world into motion
 	objects.player:update(dt)
 	objects.ghost:update(dt)
-
 	local colliders = objects.player:getGroundedBodies()
-	for i = #objects.platforms, 1, -1 do
-		objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
-		objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
+
+	for i = 1, #objects.platforms do--#objects.platforms, 1, -1 do
+		--objects.platforms[i].body:setX(objects.platforms[i].body:getX()+ (prevMapX - mapX) * tileSize)
+		--objects.platforms[i].body:setY(objects.platforms[i].body:getY()+ (prevMapY - mapY) * tileSize)
 		objects.platforms[i]:update(dt)
 		--if we are colliding with the current platform, then activate it
 		for j = 1, #colliders, 1 do
@@ -147,6 +133,7 @@ function update(dt)
 			table.remove(objects.platforms, i)
 		end
 	end
+	
 	
 	
 	--Powerup collision
@@ -164,16 +151,10 @@ function update(dt)
 	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
 	--camera.y = camera.y + objects.player.body:getY() - prevY
 	--moveMap((objects.player.body:getX() - prevX) / tileSize, 0)
-	for i, m in pairs(objects.menus) do
-		m:update(dt)
-	end
-
 	moveMap((camera.x - prevCamX) / tileSize, 0)
-	camera:setPosition(camera.x + objects.player.body:getX() - prevX, camera.y)
 	
 	prevMapX = mapX
 	prevMapY = mapY
-	
 end
  
 function draw()
@@ -212,13 +193,8 @@ function draw()
 	else
 		love.timer.sleep(settings.nextFrame - curTime)
 	end
-	
 	updateTilesetBatch()
 	camera:unset()
-	
-	for i, m in pairs(objects.menus) do
-		m:draw()
-	end
 end
 
 
